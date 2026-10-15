@@ -1,16 +1,8 @@
 # Online Chess Game Sync
 
-A lightweight, cross-platform Python script designed to automatically fetch, clean, and sync your online chess games from **Chess.com** and **Lichess** into a single, master PGN database. 
+Python script designed to automatically fetch, clean, and sync your online chess games from **Chess.com** and **Lichess** into a single, master PGN database. 
 
 You can plug the PGN into almost any chess software, I personally use HIARCS Chess Explorer Pro, but this will also work with ChessBase, EnCroissant, Scid, ChessX, etc.
-
----
-
-## What It Does
-
-* **Incremental Syncing:** On subsequent runs, Chess.com checks only the last 6 monthly archives while Lichess uses a 3-day safety overlap buffer (meaning the script will double check all games from 3 days before the last time you ran the script until the present). Duplicate detection means no game is ever added to the database twice.
-* **Multi-Platform Support:** Connects to both Chess.com (via monthly archive APIs) and Lichess (via bulk export APIs) using a single tool.
-* **Clean Formatting:** Strips out live timestamps (optional) between moves while retaining header metadata and time control summaries.
 
 ---
 
@@ -26,7 +18,7 @@ You can plug the PGN into almost any chess software, I personally use HIARCS Che
 <img width="865" height="558" alt="CleanShot 2026-10-15 at 15 16 44" src="https://github.com/user-attachments/assets/72195c73-b268-46da-b26f-23fa00e0a9ce" />
 <img width="876" height="562" alt="CleanShot 2026-10-15 at 15 14 04" src="https://github.com/user-attachments/assets/a81e575e-d423-4290-af0c-e493df767396" />
 
-### 3. Easy Chess Software Integration
+### 3. Using PGN With Chess Software (Pictured is HIARCS Chess Explorer Pro)
 *Ready to use for move tree exploration, game analysis, annotation, and anything else you regularly use your chess software for.*
 <img width="826" height="141" alt="CleanShot 2026-10-15 at 17 26 47" src="https://github.com/user-attachments/assets/ef582724-69fd-4a68-9c56-16b2865c628c" />
 <img width="586" height="576" alt="CleanShot 2026-10-15 at 17 27 20" src="https://github.com/user-attachments/assets/31df79dd-750f-4dfe-b882-3b746225f51c" />
@@ -35,11 +27,11 @@ You can plug the PGN into almost any chess software, I personally use HIARCS Che
 
 ## Key Features
 
-* **Interactive First-Time Setup:** On first run, the script prompts you for your username for both platforms, clock-stripping preference, and an optional date filter. Settings can later be modified by editing the `game_fetcher_setup.txt` file.
-* **Smart Time Control Classification:** Automatically groups your games into standard categories (`Bullet`, `Blitz`, `Rapid`, `Classical`, or `Daily`) and respects modern online thresholds (e.g., 10-minute games correctly map to Rapid).
-* **Smart Incremental Optimization:** Automatically detects your local database modification time and targets only recent archives/timestamps (with a built-in 3-day safety overlap buffer to guarantee zero missed games) while using URL deduplication to prevent duplicate entries.
-* **Clear Rated/Unrated Differentiation:** Easily see if a specific game was rated or unrated by looking at the `Event` tag.
-* **Readable Result Comments:** Puts the reason for game terminations in the starting comment (e.g., `Time Control: 10 min + 0 sec | Result: White won by resignation`). Note: Lichess does not include resignation or abandonment reasons in their PGN exports, so all non-checkmate, non-time, non-draw Lichess results are listed as resignation."
+* **Easy Configuration on First Run:** On first run, the script prompts you for your username for both platforms, clock-stripping preference, and an optional date filter. Settings can later be modified by editing the `game_fetcher_setup.txt` file.
+* **Time Control Classification:** Automatically groups your games into standard categories (`Bullet`, `Blitz`, `Rapid`, `Classical`, or `Daily`) and respects modern online thresholds (e.g., 10-minute games correctly map to Rapid).
+* **Subsequent Runs Skip Existing Games:** Automatically detects your local database modification time and targets only recent archives/timestamps (with a built-in 3-day safety overlap buffer to guarantee zero missed games) while using URL deduplication to prevent duplicate entries.
+* **Rated/Unrated Differentiation:** Easily see if a specific game was rated or unrated by looking at the `Event` tag.
+* **Preceeding Result Comments:** Puts the reason for game terminations in the starting comment (e.g., `Time Control: 10 min + 0 sec | Result: White won by resignation`). Note: Lichess does not include resignation or abandonment reasons in their PGN exports, so all non-checkmate, non-time, non-draw Lichess results are listed as resignation."
 * **Variant Filtering:** Automatically filters out variant games (Atomic, Crazyhouse, King of the Hill, etc), but keeps your Chess960/Fischer Random games.
 * **Optional Date Range Filtering:** Set a `START_DATE` (`YYYY-MM`) in your configuration if you only want to pull games from a specific point onward (or leave blank to pull all games).
 
