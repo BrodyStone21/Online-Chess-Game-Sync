@@ -2,7 +2,7 @@
 
 A lightweight, cross-platform Python script designed to automatically fetch, clean, and sync your online chess games from **Chess.com** and **Lichess** into a single, master PGN database. 
 
-You can plug the PGN into almost any chess software, I personally use HIARCS Chess Explorer Pro, but this will also work with 
+You can plug the PGN into almost any chess software, I personally use HIARCS Chess Explorer Pro, but this will also work with ChessBase, EnCroissant, Scid, ChessX, etc.
 
 ---
 
