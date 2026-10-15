@@ -54,6 +54,8 @@ Pulling thousands of games across both platforms takes less than two minutes:
 ## How to Use
 Open Terminal (if you're on Linux or Mac) or Command Prompt (if you're on Windows), navigate to the directory your script is stored, for example, `cd Desktop/Game_Fetcher`, then run the python script `python3 game_fetcher.py`. Depending on the system, you may need to remove the `3`, `python game_fetcher.py`. 
 
+If you decide you'd like to change options like your username, clock stripping setting, etc, then you can modify them in the `game_fetcher_setup.txt` file. 
+
 It's that easy!
 
 Let me know if you have any issues or would like to request new features. I'm afraid creating a GUI is outside my wheelhouse, so this will only be a text based program for the foreseeable future. I hope you enjoy it!
