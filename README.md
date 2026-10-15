@@ -10,7 +10,7 @@ You can plug the PGN into almost any chess software, I personally use HIARCS Che
 
 * **Incremental Syncing:** Uses local file modification timestamps and a 3-day safety overlap buffer to check only recent games, ensuring daily updates finish in under 10 seconds while preventing any missed games.
 * **Multi-Platform Support:** Connects to both Chess.com (via monthly archive APIs) and Lichess (via bulk export APIs) using a single tool.
-* **Clean Formatting:** Strips out distracting live timestamps (`[%clk ...]`) between moves while retaining professional header metadata and readable time control summaries.
+* **Clean Formatting:** Strips out live timestamps (optional) between moves while retaining header metadata and time control summaries.
 
 ---
 
