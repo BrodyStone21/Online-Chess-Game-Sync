@@ -28,8 +28,8 @@ You can plug the PGN into almost any chess software, I personally use HIARCS Che
 ## Key Features
 
 * **Configuration on First Run:** On first run, the script prompts you for your username for both platforms, clock-stripping preference, and an optional date filter. Settings can later be modified by editing the `game_fetcher_setup.txt` file.
-* **Time Control Classification:** Automatically groups your games into standard categories (`Bullet`, `Blitz`, `Rapid`, `Classical`, or `Daily`) and respects modern online thresholds (e.g., 10-minute games correctly map to Rapid).
-* **Subsequent Runs Skip Existing Games:** Automatically detects your local database modification time and targets only recent archives/timestamps (with a built-in 3-day safety overlap buffer to guarantee zero missed games) while using URL deduplication to prevent duplicate entries.
+* **Time Control Classification:** Groups your games into standard categories (`Bullet`, `Blitz`, `Rapid`, `Classical`, or `Daily`) and respects modern online thresholds (e.g., 10-minute games correctly map to Rapid).
+* **Subsequent Runs Skip Existing Games:** Detects your local database modification time and targets only recent archives/timestamps (Lichess games will have a 3-day overlap buffer to make sure no games are missed since the export process between Lichess and Chess.com is different) while using URL deduplication.
 * **Rated/Unrated Differentiation:** Easily see if a specific game was rated or unrated by looking at the `Event` tag.
 * **Preceeding Result Comments:** Puts the reason for game terminations in the starting comment (e.g., `Time Control: 10 min + 0 sec | Result: White won by resignation`). Note: Lichess does not include resignation or abandonment reasons in their PGN exports, so all non-checkmate, non-time, non-draw Lichess results are listed as resignation."
 * **Variant Filtering:** Automatically filters out variant games (Atomic, Crazyhouse, King of the Hill, etc), but keeps your Chess960/Fischer Random games.
