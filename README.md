@@ -27,7 +27,7 @@ You can plug the PGN into almost any chess software, I personally use HIARCS Che
 
 ## Key Features
 
-* **Easy Configuration on First Run:** On first run, the script prompts you for your username for both platforms, clock-stripping preference, and an optional date filter. Settings can later be modified by editing the `game_fetcher_setup.txt` file.
+* **Configuration on First Run:** On first run, the script prompts you for your username for both platforms, clock-stripping preference, and an optional date filter. Settings can later be modified by editing the `game_fetcher_setup.txt` file.
 * **Time Control Classification:** Automatically groups your games into standard categories (`Bullet`, `Blitz`, `Rapid`, `Classical`, or `Daily`) and respects modern online thresholds (e.g., 10-minute games correctly map to Rapid).
 * **Subsequent Runs Skip Existing Games:** Automatically detects your local database modification time and targets only recent archives/timestamps (with a built-in 3-day safety overlap buffer to guarantee zero missed games) while using URL deduplication to prevent duplicate entries.
 * **Rated/Unrated Differentiation:** Easily see if a specific game was rated or unrated by looking at the `Event` tag.
