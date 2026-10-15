@@ -41,7 +41,7 @@ You can plug the PGN into almost any chess software, I personally use HIARCS Che
 Pulling thousands of games across both platforms takes less than two minutes:
 * **Chess.com:** ~4,900 games processed across 32 monthly archives in 20 seconds.
 * **Lichess:** ~1,800 games exported in 75 seconds.
-* **Incremental Runs:** Subsequent daily updates take less than 10 seconds since duplicate checking instantly skips previously saved games.
+* **Incremental Runs:** Subsequent daily updates take less than 10 seconds since duplicate checking skips previously saved games.
 
 ## Requirements
 * Python 3.x
