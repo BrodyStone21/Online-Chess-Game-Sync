@@ -1,5 +1,6 @@
 import os
 import io
+import json
 import time
 import re
 import requests
@@ -7,11 +8,18 @@ import chess.pgn
 from datetime import datetime
 
 SETUP_FILE = "game_fetcher_setup.txt"
+STATE_FILE = "game_fetcher_state.json"
 DEFAULT_OUTPUT_PGN = "My Online Games.pgn"
 
 HEADERS = {
     "User-Agent": "HIARCS-PGN-Fetcher/1.0 (Contact: brodylstone21@gmail.com)"
 }
+
+
+def log(message):
+    """Prints messages with a standardized local timestamp."""
+    timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+    print(f"{timestamp} {message}")
 
 
 def load_config():
@@ -36,7 +44,7 @@ def load_config():
                     elif key == "STRIP_CLOCKS":     strip_clocks_flag = val.lower() in ("true", "yes", "1", "y")
                     elif key == "START_DATE":       start_date = val
     else:
-        print("=== First-Time Setup ===")
+        log("=== First-Time Setup ===")
         chess_user   = input("Enter your Chess.com username (leave blank if none): ").strip()
         lichess_user = input("Enter your Lichess username (leave blank if none): ").strip()
         strip_input  = input("Strip clock data between moves? [Y/n] (Default Y): ").strip().lower()
@@ -49,36 +57,59 @@ def load_config():
             f.write(f"OUTPUT_PGN = {DEFAULT_OUTPUT_PGN}\n")
             f.write(f"STRIP_CLOCKS = {strip_clocks_flag}\n")
             f.write(f"START_DATE = {start_date}\n")
-        print(f"\nSaved configuration to '{SETUP_FILE}'.\n")
+        log(f"Saved configuration to '{SETUP_FILE}'.")
 
     return chess_user, lichess_user, output_pgn, strip_clocks_flag, start_date
 
 
-def get_existing_sources(pgn_path):
+def load_state(pgn_path):
+    """Loads existing game sources and last fetch timestamp from JSON state cache, 
+    falling back to a one-time PGN scan if no state cache exists yet."""
     existing_sources = set()
-    if not os.path.exists(pgn_path):
-        print(f"No existing PGN file found at '{pgn_path}'. A new one will be created.")
-        return existing_sources, 0
+    last_fetch_timestamp = 0
 
-    last_modified = os.path.getmtime(pgn_path)
-    print(f"Reading existing local database from '{pgn_path}'...")
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                existing_sources = set(data.get("existing_sources", []))
+                last_fetch_timestamp = data.get("last_fetch_timestamp", 0)
+            log(f"Loaded state cache: {len(existing_sources)} known games tracked.")
+            return existing_sources, last_fetch_timestamp
+        except Exception:
+            log("State file unreadable. Rebuilding state from local PGN...")
 
-    with open(pgn_path, "r", encoding="utf-8", errors="ignore") as f:
-        while True:
-            try:
-                game = chess.pgn.read_game(f)
-                if game is None:
-                    break
-                for tag in ("GameLink", "Source", "Link"):
-                    val = game.headers.get(tag, "").strip()
-                    if val:
-                        existing_sources.add(val)
+    # Fallback / First-time migration: Scan existing PGN file once if present
+    if os.path.exists(pgn_path):
+        log(f"Scanning existing PGN at '{pgn_path}' for migration...")
+        with open(pgn_path, "r", encoding="utf-8", errors="ignore") as f:
+            while True:
+                try:
+                    game = chess.pgn.read_game(f)
+                    if game is None:
                         break
-            except Exception:
-                continue
+                    for tag in ("GameLink", "Source", "Link"):
+                        val = game.headers.get(tag, "").strip()
+                        if val:
+                            existing_sources.add(val)
+                            break
+                except Exception:
+                    continue
+        log(f"Migration complete. Indexed {len(existing_sources)} existing games.")
+    else:
+        log(f"No existing PGN file found at '{pgn_path}'. A new one will be created.")
 
-    print(f"Found {len(existing_sources)} existing games already saved locally.")
-    return existing_sources, last_modified
+    return existing_sources, last_fetch_timestamp
+
+
+def save_state(existing_sources, last_fetch_timestamp):
+    """Saves updated game sources and current timestamp to JSON state cache."""
+    data = {
+        "existing_sources": list(existing_sources),
+        "last_fetch_timestamp": last_fetch_timestamp
+    }
+    with open(STATE_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
 
 
 def is_valid_game(game):
@@ -240,33 +271,38 @@ def clean_game_headers(game, platform_name, source_url, is_rated=True, raw_pgn_t
             del game.headers[tag]
 
 
-def fetch_chess_com_games(username, existing_sources, strip_clocks_flag, start_date, last_modified):
+def fetch_chess_com_games(username, existing_sources, strip_clocks_flag, start_date, last_fetch_timestamp):
     if not username: return []
-    print(f"\n--- Connecting to Chess.com for '{username}' ---")
+    log(f"--- Connecting to Chess.com for '{username}' ---")
 
     resp = requests.get(
         f"https://api.chess.com/pub/player/{username.lower()}/games/archives",
         headers=HEADERS
     )
     if resp.status_code != 200:
-        print(f"Failed to reach Chess.com (Status {resp.status_code})")
+        log(f"Failed to reach Chess.com (Status {resp.status_code})")
         return []
 
     archive_urls = resp.json().get("archives", [])
 
-    if last_modified > 0 and not start_date:
-        archive_urls = archive_urls[-6:]
-        print(f"Incremental mode: Checking last {len(archive_urls)} monthly archive(s)...")
+    # Determine cutoff date for incremental fetching (3-day buffer)
+    cutoff_dt = None
+    if last_fetch_timestamp > 0 and not start_date:
+        cutoff_dt = datetime.fromtimestamp(last_fetch_timestamp - 3 * 86400)
+        log(f"Incremental mode: Fetching Chess.com archives from {cutoff_dt.strftime('%Y-%m')} onward...")
     else:
-        print(f"Found {len(archive_urls)} monthly archive periods. Processing all...")
+        log(f"Found {len(archive_urls)} monthly archive periods. Processing all...")
 
     start_tuple = tuple(map(int, start_date.split("-"))) if start_date else None
     new_games, total_added = [], 0
 
     for url in archive_urls:
         parts = url.split("/")
-        year, month = parts[-2], parts[-1]
-        if start_tuple and (int(year), int(month)) < start_tuple:
+        year, month = int(parts[-2]), int(parts[-1])
+        
+        if start_tuple and (year, month) < start_tuple:
+            continue
+        if cutoff_dt and (year, month) < (cutoff_dt.year, cutoff_dt.month):
             continue
 
         month_resp = requests.get(url, headers=HEADERS)
@@ -301,15 +337,15 @@ def fetch_chess_com_games(username, existing_sources, strip_clocks_flag, start_d
             except Exception:
                 continue
 
-        print(f"  [{year}/{month}] Added {added} valid games.")
+        log(f"  [{year}/{month:02d}] Added {added} valid games.")
 
-    print(f"Total new games from Chess.com: {total_added}")
+    log(f"Total new games from Chess.com: {total_added}")
     return new_games
 
 
-def fetch_lichess_games(username, existing_sources, strip_clocks_flag, start_date, last_modified):
+def fetch_lichess_games(username, existing_sources, strip_clocks_flag, start_date, last_fetch_timestamp):
     if not username: return []
-    print(f"\n--- Connecting to Lichess for '{username}' ---")
+    log(f"--- Connecting to Lichess for '{username}' ---")
 
     url = f"https://lichess.org/api/games/user/{username}?evals=0&clocks=1"
 
@@ -320,17 +356,17 @@ def fetch_lichess_games(username, existing_sources, strip_clocks_flag, start_dat
             effective_since = int(dt.timestamp() * 1000)
         except Exception:
             pass
-    elif last_modified > 0:
-        effective_since = int((last_modified - 3 * 86400) * 1000)
-        print("Incremental mode: Fetching with a 3-day safety overlap buffer...")
+    elif last_fetch_timestamp > 0:
+        effective_since = int((last_fetch_timestamp - 3 * 86400) * 1000)
+        log("Incremental mode: Fetching Lichess games with a 3-day safety overlap buffer...")
 
     if effective_since > 0:
         url += f"&since={effective_since}"
 
-    print("Downloading Lichess game export (this may take a minute or two)...")
+    log("Downloading Lichess game export (this may take a minute or two)...")
     resp = requests.get(url, headers={**HEADERS, "Accept": "application/x-chess-pgn"})
     if resp.status_code != 200:
-        print(f"Failed to fetch Lichess games (Status {resp.status_code})")
+        log(f"Failed to fetch Lichess games (Status {resp.status_code})")
         return []
 
     raw_blocks = []
@@ -371,32 +407,38 @@ def fetch_lichess_games(username, existing_sources, strip_clocks_flag, start_dat
         except Exception:
             continue
 
-    print(f"Finished Lichess. Processed {processed} | New added: {len(new_games)}.")
+    log(f"Finished Lichess. Processed {processed} | New added: {len(new_games)}.")
     return new_games
 
 
 def main():
     chess_user, lichess_user, output_pgn, strip_clocks_flag, start_date = load_config()
-    print(
+    log(
         f"Active config -> Chess.com: '{chess_user or 'Disabled'}' | "
         f"Lichess: '{lichess_user or 'Disabled'}' | Output: '{output_pgn}'"
     )
 
-    existing_sources, last_modified = get_existing_sources(output_pgn)
+    # Load state cache (sources + last successful run timestamp)
+    existing_sources, last_fetch_timestamp = load_state(output_pgn)
 
-    chess_games   = fetch_chess_com_games(chess_user,   existing_sources, strip_clocks_flag, start_date, last_modified)
-    lichess_games = fetch_lichess_games(lichess_user, existing_sources, strip_clocks_flag, start_date, last_modified)
+    chess_games   = fetch_chess_com_games(chess_user,   existing_sources, strip_clocks_flag, start_date, last_fetch_timestamp)
+    lichess_games = fetch_lichess_games(lichess_user, existing_sources, strip_clocks_flag, start_date, last_fetch_timestamp)
 
     all_new = chess_games + lichess_games
     if not all_new:
-        print(f"\nNo new games found. '{output_pgn}' is already up to date!")
+        log(f"No new games found. '{output_pgn}' is already up to date!")
+        # Update timestamp even if no new games so incremental window shifts forward cleanly
+        save_state(existing_sources, time.time())
         return
 
-    print(f"\nAppending {len(all_new)} new games to '{output_pgn}'...")
+    log(f"Appending {len(all_new)} new games to '{output_pgn}'...")
     with open(output_pgn, "a", encoding="utf-8") as f:
         for game in all_new:
             print(game, file=f, end="\n\n")
-    print(f"Done! '{output_pgn}' updated successfully.")
+
+    # Save updated state with current epoch timestamp
+    save_state(existing_sources, time.time())
+    log(f"Done! '{output_pgn}' updated successfully.")
 
 
 if __name__ == "__main__":
