@@ -34,6 +34,7 @@ You can plug the PGN into almost any chess software, I personally use HIARCS Che
 * **Preceeding Result Comments:** Puts the reason for game terminations in the starting comment (e.g., `Time Control: 10 min + 0 sec | Result: White won by resignation`). Note: Lichess does not include resignation or abandonment reasons in their PGN exports, so all non-checkmate, non-time, non-draw Lichess results are listed as resignation."
 * **Variant Filtering:** Automatically filters out variant games (Atomic, Crazyhouse, King of the Hill, etc), but keeps your Chess960/Fischer Random games.
 * **Optional Date Range Filtering:** Set a `START_DATE` (`YYYY-MM`) in your configuration if you only want to pull games from a specific point onward (or leave blank to pull all games).
+* **Multiple Account Support** Download games from an unlimited amount of usernames from either Chess.com or Lichess
 
 ---
 
@@ -41,7 +42,7 @@ You can plug the PGN into almost any chess software, I personally use HIARCS Che
 Pulling thousands of games across both platforms takes less than two minutes:
 * **Chess.com:** ~4,900 games processed across 32 monthly archives in 20 seconds.
 * **Lichess:** ~1,800 games exported in 75 seconds.
-* **Incremental Runs:** Subsequent daily updates take less than 10 seconds since duplicate checking skips previously saved games.
+* **Incremental Runs:** Subsequent daily updates take only a few seconds since URL deduplication and per-user state tracking skip previously saved games.
 
 ## Requirements
 * Python 3.x
